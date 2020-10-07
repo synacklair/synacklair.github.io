@@ -107,7 +107,7 @@ metric=$(ps aux | grep <span class="hljs-_">-e</span> java | wc <span class="hlj
 <span class="hljs-built_in">echo</span> <span class="hljs-string">"name=Custom Metrics|<span class="hljs-variable">${METRIC_NAME}</span>|<span class="hljs-variable">${NODE_NAME}</span>|count,value=<span class="hljs-variable">$metric</span>,aggregator=OBSERVATION,time-rollup=CURRENT,cluster-rollup=INDIVIDUAL"</span>
 </code></pre><p>Now, those final parameters I appended to the end of my echo to STDOUT are outlined in the <a href="https://docs.appdynamics.com/display/PRO45/Build+a+Monitoring+Extension+Using+Scripts">AppDynamics custom metric documentation</a>, but these are probably the best settings for metrics that are reported on in real-time, which is most custom monitoring.</p>
 <p>After a quick restart of the machine agent, we will find our new custom metrics in the AppDynamics metric browser, ready to be analyzed and alerted on.</p>
-<p>Thanks for reading! If you have any questions, feel free to reach out to me on <a href="https://twitter.com/metricmover">Twitter</a></p>
+<p>Thanks for reading! If you have any questions, feel free to reach out to me on <a href="https://twitter.com/synacklair">Twitter</a></p>
 
 </div>
     </section>
