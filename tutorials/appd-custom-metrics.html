@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<head>
+    <title>AppD Custom Metrics</title>
+    <link rel="shortcut icon" href="/assets/images/favicon.ico">
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,maximum-scale=2">
+    <link rel="stylesheet" type="text/css" media="screen" href="../assets/css/style.css">
+
+    <style>
+        .navbar-ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #333;
+        }
+
+        .navbar-li {
+            float: left;
+        }
+
+        .navbar-lia {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        li a:hover:not(.active) {
+            background-color: #111;
+        }
+
+        .active {
+            background-color: #16AA9D;
+        }
+        .img-container {
+            text-align: center;
+        }
+    </style>
+
+
+  </head>
+
+  <body>
+
+    <ul class="navbar-ul">
+        <li class="navbar-li"><a class="navbar-lia" href="../index.html">Home</a></li>
+        <li class="navbar-li"><a class="active navbar-lia" href="../tutorials.html">Tutorials</a></li>
+        <li class="navbar-li"><a class="navbar-lia" href="../contact.html">Contact</a></li>
+        <li class="navbar-li"><a class="navbar-lia" href="../about.html">About</a></li>
+    </ul>
+
+
+<h2 style="color:#fff;">Pushing AppD Custom Metrics</h2>
+
+
+
+<div id="main_content_wrap" class="outer">
+    <section id="main_content" class="inner">
+        <div class="img-container"><figure><img src="/assets/images/appd.png"><figcaption><i>via <a href="https://www.appdynamics.com/">AppDynamics</a></i></figcaption></figure></div>
+        
+        <div><p>In this tutorial, I will introduce how to publish custom metrics from a server into the AppDynamics controller. Let&#39;s start with what exactly AppDynamics is why we may use it. <a href="https://www.appdynamics.com/">AppDynamics</a> (or AppD for short) is an agent-based (i.e. node-local process that ships metrics to a centralized controller) enterprise monitoring tool that specializes in Application Performance Monitoring (or APM). It does this by converting various different application aspects into what AppD calls &quot;business transactions&quot;. These business transactions can be API calls, database queries, logins, server restarts, auto-scaling invocations, and much more. It then compares these events against a baseline of events that it measures and compares against over the lifetime of monitoring the application. Therefore, the longer you have AppD installed, the smarter it becomes about your application and the more refined its alerting and remediation capabilities can be.</p>
+<p>AppD can typically determine business transactions if you just give it a few hours to observe the application - or even better, a full business week to cover all load differentials that could arise throughout the week. However, sometimes what the tool determines as &quot;important&quot; is actually not, or it misses some key aspects of your application you want to capture. In these cases, we can actually use AppDynamic&#39;s custom metrics feature to write scripts locally on our nodes and export the metrics we want to the AppD contoller. Even if your metrics aren&#39;t initially found by AppD, it&#39;s still important to ship your custom metrics to the controller to live with all of your other measurements. With all of the metrics in one place, we can still trend against baselines and alert on abnormal values whether the metric was picked up by AppD initially or had been pushed through a custom script.</p>
+<p>AppD has great <a href="https://docs.appdynamics.com/display/PRO45/Build+a+Monitoring+Extension+Using+Scripts">documentation</a> for custom metrics, but I hope to simplify and cut down some of the noise in the following tutorial. In order for AppD to monitor our application or servers, we need to install at least the <a href="https://docs.appdynamics.com/display/PRO45/Standalone+Machine+Agent">machine agent</a> and if we want even more application monitoring, we can install the <a href="https://docs.appdynamics.com/display/PRO45/Install+App+Server+Agents">process-specific agent</a> provided by AppD (i.e. the Java agent for monitoring Java processes).</p>
+<p>The installation of these monitoring agents is outside the scope of this tutorial, but the documentation I linked should be sufficient to get them up and running. Our custom metrics will ship through the machine agent, so it&#39;s important to have that installed. Another vital piece to shipping our metrics is the directory structure of our scripts and configurations. Within the same directory that the AppD machine agent is installed in will be a <code>/monitors</code> sub-directory. If this does not exist, feel free to create it. In the <code>/monitors</code> directory, there will need to be another sub-directory for each custom metric we want to ship. As an example, we will set up all of the files required to create a custom metric that returns a count of the number of JVMs currently running on the system. So, we will have a directory structure of:</p>
+<p> <code>&lt;appd_machine_agent_directory&gt;/monitors/jvm-count</code></p>
+<p>Inside our custom directory, we will have three files (again, three files <em>per</em> metric we want to ship): <code>config.yml</code>, <code>monitor.xml</code>, and our main script, which we will call <code>jvm-count.sh</code>. Typically it&#39;s best practice to name this script the same as the directory it is located in, and that will be the same name we will find in the AppDynamics controller. <code>monitor.xml</code> will tell the machine agent how to call our script and what metadata to associate with it. The<code>config.yml</code> file will hold very specific configurations for how the script runs such as number of threads to execute, script execution delays, etc. Finally, the <code>jvm-count.sh</code> will be our script that echoes our metric to STDOUT for the AppD machine agent to pick up and ship to the controller.</p>
+<p>The configuration script located at <code>&lt;appd_machine_agent_directory&gt;/monitors/jvm-count/config.yml</code>:</p>
+<pre><code><span class="hljs-symbol">metricPrefix:</span> <span class="hljs-string">"Custom Metrics|"</span>
+<span class="hljs-symbol">numberOfThreads:</span> <span class="hljs-number">1</span>
+<span class="hljs-symbol">taskDelaySeconds:</span> <span class="hljs-number">300</span>
+</code></pre><p>The monitoring metadata script located at <code>&lt;appd_machine_agent_directory&gt;/monitors/jvm-count/monitor.xml</code>:</p>
+<pre><code><span class="hljs-tag">&lt;<span class="hljs-name">monitor</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>JVMCount<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">type</span>&gt;</span>managed<span class="hljs-tag">&lt;/<span class="hljs-name">type</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>Count of JVMs running on system<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">monitor-configuration</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">monitor-configuration</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">monitor-run-task</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">execution-style</span>&gt;</span>periodic<span class="hljs-tag">&lt;/<span class="hljs-name">execution-style</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">execution-frequency-in-seconds</span>&gt;</span>60<span class="hljs-tag">&lt;/<span class="hljs-name">execution-frequency-in-seconds</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>Run<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">type</span>&gt;</span>executable<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">task-arguments</span>&gt;</span>
+          <span class="hljs-comment">&lt;!-- Point this to your config.yml file --&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">argument</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"config-file"</span> <span class="hljs-attr">is-required</span>=<span class="hljs-string">"true"</span> <span class="hljs-attr">default-value</span>=<span class="hljs-string">"monitors/jvm-count/config.yml"</span>/&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">task-arguments</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">executable-task</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">type</span>&gt;</span>file<span class="hljs-tag">&lt;/<span class="hljs-name">type</span>&gt;</span>
+          <span class="hljs-comment">&lt;!-- Use only one file element per os-type. Use "windows" or "mac" if those hosts apply --&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">file</span> <span class="hljs-attr">os-type</span>=<span class="hljs-string">"linux"</span>&gt;</span>jvm-count.sh<span class="hljs-tag">&lt;/<span class="hljs-name">file</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">executable-task</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">monitor-run-task</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">monitor</span>&gt;</span>
+</code></pre><p>The custom metric capturing script located at <code>&lt;appd_machine_agent_directory&gt;/monitors/jvm-count/jvm-count.sh</code>:</p>
+<pre><code><span class="hljs-comment"># Node name grabbed dynamically from the node's machine agent config</span>
+NODE_NAME=$(grep -oP <span class="hljs-string">'(?&lt;=&lt;tier-name&gt;).*?(?=&lt;/tier-name&gt;)'</span> ../../conf/controller-info.xml)
+
+<span class="hljs-comment"># Name of metric to show in AppDynamics, grabbed from script name</span>
+METRIC_NAME=$(basename <span class="hljs-string">"<span class="hljs-variable">$0</span>"</span> .sh)
+
+<span class="hljs-comment"># Metric value that script is capturing, placed in "$metric" variable, here is the count of JVMs running on the system</span>
+metric=$(ps aux | grep <span class="hljs-_">-e</span> java | wc <span class="hljs-_">-l</span>)
+
+<span class="hljs-comment"># Echo metric to STDOUT for AppDynamics machine agent to pick up</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"name=Custom Metrics|<span class="hljs-variable">${METRIC_NAME}</span>|<span class="hljs-variable">${NODE_NAME}</span>|count,value=<span class="hljs-variable">$metric</span>,aggregator=OBSERVATION,time-rollup=CURRENT,cluster-rollup=INDIVIDUAL"</span>
+</code></pre><p>Now, those final parameters I appended to the end of my echo to STDOUT are outlined in the <a href="https://docs.appdynamics.com/display/PRO45/Build+a+Monitoring+Extension+Using+Scripts">AppDynamics custom metric documentation</a>, but these are probably the best settings for metrics that are reported on in real-time, which is most custom monitoring.</p>
+<p>After a quick restart of the machine agent, we will find our new custom metrics in the AppDynamics metric browser, ready to be analyzed and alerted on.</p>
+<p>Thanks for reading! If you have any questions, feel free to reach out to me on <a href="https://twitter.com/metricmover">Twitter</a></p>
+
+</div>
+    </section>
+  </div>

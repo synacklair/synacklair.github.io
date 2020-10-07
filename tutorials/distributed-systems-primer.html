@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<head>
+    <title>Distributed Systems Primer</title>
+    <link rel="shortcut icon" href="/assets/images/favicon.ico">
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,maximum-scale=2">
+    <link rel="stylesheet" type="text/css" media="screen" href="../assets/css/style.css">
+
+    <style>
+        .navbar-ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #333;
+        }
+
+        .navbar-li {
+            float: left;
+        }
+
+        .navbar-lia {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        li a:hover:not(.active) {
+            background-color: #111;
+        }
+
+        .active {
+            background-color: #16AA9D;
+        }
+        .img-container {
+            text-align: center;
+        }
+    </style>
+
+
+  </head>
+
+  <body>
+
+    <ul class="navbar-ul">
+        <li class="navbar-li"><a class="navbar-lia" href="../index.html">Home</a></li>
+        <li class="navbar-li"><a class="active navbar-lia" href="../tutorials.html">Tutorials</a></li>
+        <li class="navbar-li"><a class="navbar-lia" href="../contact.html">Contact</a></li>
+        <li class="navbar-li"><a class="navbar-lia" href="../about.html">About</a></li>
+    </ul>
+
+
+<h2 style="color:#fff;">Distributed Systems Primer</h2>
+
+
+<div id="main_content_wrap" class="outer">
+    <section id="main_content" class="inner">
+        <div>A distributed system is basically one giant computer. It can be defined by one application/system running across several nodes in a cluster. Instead of just running one application per server and having the entire app become unavailable if the host it's running on goes down, we can distribute the application across multiple servers, and thus make it fault-tolerant against single points of failure.</div><div><br /></div>The "CAP Theorem" in distributed systems was first proposed by&nbsp;Professor Eric A. Brewer during a talk he gave on distributed computing in 2000. It stands for <b>Consistency</b>, <b>Availability</b>, and <b>Partition tolerance</b>. These three attributes explain how a distributed system behaves to a single node failing within it.<div><br /></div><div><ul style="text-align: left;"><li><b>Consistency</b>: all working nodes within a cluster will respond with the same data at the same time, regardless of which node the request goes to</li><li><b>Availability</b>: all working nodes within a cluster will give a valid response</li><li><b>Partition tolerance</b>: the cluster will continue to function despite any number of network segmentation between nodes</li></ul><div>The real power behind the CAP theorem is that for any distributed system, you can only choose <b>two</b> of the three attributes for it to have. Remember that a cluster is just a giant distributed computer. If we lose communication with a single node, that shouldn't bring the entire system grinding to a halt. It wouldn't make sense for the whole system to fail if one node suddenly doesn't respond to the others - that would defeat the purpose of making it distributed in the first place!<br /><br />Therefore, in practice, we can't really control <b>partition tolerance</b> - we can't choose to have 100% availability and 100% consistency all the time. So in reality, we can only choose between making a given cluster consistent, or available.</div><div><br /></div><div>But what does that choice look like? What happens if you choose one over another?</div><div><br /></div><div>Let's say we have two servers in a cluster. They're just happy little servers, communicating data back and forth and each servicing their own requests.</div><div><br /></div><div class="separator" style="clear: both; text-align: center;"><a href="https://1.bp.blogspot.com/-DqNo85A9xBs/XwXGRO4xWSI/AAAAAAAAAeE/37VSYPZe02wvmPU38OTldiVHfZmI_kICACK4BGAsYHg/s249/server%2B%25283%2529.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" data-original-height="178" data-original-width="249" height="279" src="https://1.bp.blogspot.com/-DqNo85A9xBs/XwXGRO4xWSI/AAAAAAAAAeE/37VSYPZe02wvmPU38OTldiVHfZmI_kICACK4BGAsYHg/w389-h279/server%2B%25283%2529.png" width="389" /></a></div><div class="separator" style="clear: both; text-align: center;"><br /></div><div><br /></div><div>Now let's break the connection between them! Remember, our system <i>has</i> to be partition tolerant, or else its not really distributed, is it? What happens if a new client requests some data from Server A, who can no longer talk to Server B?<br /><br />Well, if that connection wasn't broken, Server A could just verify with Server B that it has the latest data in the cluster, update itself if it wasn't, and then respond to the request. However, since Server A can no longer see B, it now has to proceed with the choice that we made when we set it up:<br /><br /><ul style="text-align: left;"><li>If we chose consistency over availability, Server A <i>would not respond</i> until it can re-establish a connection with Server B. It cannot verify that it's own data is accurate, so instead of sending what may be inaccurate data back to the client, it will hang indefinitely while it tries to see Server B again. This makes it consistent - it really wants to give back the right answer - but not available, it will just hang forever.</li></ul></div></div><div><br /></div><div><ul style="text-align: left;"><li>If we chose availability over consistency, Server A <i>would respond, but with potentially inaccurate data</i>&nbsp;to the client. This makes it available - we can talk to it just fine - but not consistent, it has no way of verifying if it has the latest information in the cluster.</li></ul></div><div><br /></div><div>Now, where I come from, hanging on a web page indefinitely is usually considered a bad customer experience. <i>Typically </i>you'll see most applications choose to sacrifice consistency and then try some fancy tricks to get as close to optimal consistency as you can. There are some interesting ways to make up for the sacrifice like <b>eventual consistency</b>, which can break down further into <b>read-your-writes consistency</b>&nbsp;and <b>monotonic read consistency</b>, but I'm going to save those topics for a later date.<br /><br />For now, I want you to try to find examples of this out in the wild. Ever post a comment on social media and refreshed the page to see that it's not there? Then after freaking out that the world will never see your great commentary, you frantically refresh again to see your sweet little comment all nuzzled and warm on the web page? That social media platform chose availability over consistency.&nbsp;</div><div><br /></div><div>On the contrary, if you refreshed the page and it hung for a few seconds (or in the case of a catastrophic failure - indefinitely) while it waited for all the nodes to get the same data, then that social media platform chose consistency over availability.</div><div><br /></div><div><br /></div><div><br /></div><div>I hope that learning about the CAP theorem was somewhat enlightening, even if there are great debates in the distributed system community today about the validity of such a theorem.&nbsp;</div><div><br /></div><div>Have you ever seen a time where a website chose <b>C</b>&nbsp;over <b>A </b>or vice versa? Let me know on Twitter: <a href="https://twitter.com/metricmover">@metricmover</a></div><div><br /></div><div><br /></div><div><br /></div><div><br /></div><div><br /></div><div><br /></div>
+    </section>
+  </div>
